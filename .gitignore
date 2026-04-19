@@ -37,3 +37,9 @@ Thumbs.db
 reports/
 scans/
 output/
+
+# User-specific seed forms (treated like .env — local config only)
+seed_forms.yml
+
+# Scan output
+reports/

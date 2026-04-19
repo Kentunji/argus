@@ -1,9 +1,4 @@
-"""Configuration loader for Argus.
-
-Loads settings from environment variables (with .env support via python-dotenv)
-and validates that required values are present. Fail fast — if config is wrong,
-we surface it at startup, not mid-scan.
-"""
+"""Configuration loader for Argus."""
 
 from __future__ import annotations
 
@@ -27,19 +22,14 @@ class Config:
     deepseek_model: str
     target_url: str
     max_crawl_depth: int
+    max_crawl_pages: int
     scan_timeout: int
     log_level: str
+    seed_forms_path: Path | None
+    reports_dir: Path
 
     @classmethod
     def load(cls, env_file: Path | None = None) -> "Config":
-        """Load configuration from environment / .env file.
-
-        Args:
-            env_file: Optional path to a .env file. Defaults to ./.env.
-
-        Raises:
-            ConfigError: If required values are missing or malformed.
-        """
         if env_file is None:
             env_file = Path.cwd() / ".env"
         if env_file.exists():
@@ -58,9 +48,19 @@ class Config:
 
         try:
             max_depth = int(os.getenv("MAX_CRAWL_DEPTH", "3"))
+            max_pages = int(os.getenv("MAX_CRAWL_PAGES", "200"))
             timeout = int(os.getenv("SCAN_TIMEOUT", "300"))
         except ValueError as exc:
             raise ConfigError(f"Numeric config value is not an integer: {exc}") from exc
+
+        seed_path_str = os.getenv("SEED_FORMS", "").strip()
+        seed_forms_path = Path(seed_path_str) if seed_path_str else None
+        if seed_forms_path and not seed_forms_path.is_absolute():
+            seed_forms_path = Path.cwd() / seed_forms_path
+
+        reports_dir = Path(os.getenv("REPORTS_DIR", "reports").strip())
+        if not reports_dir.is_absolute():
+            reports_dir = Path.cwd() / reports_dir
 
         return cls(
             deepseek_api_key=api_key,
@@ -68,6 +68,9 @@ class Config:
             deepseek_model=os.getenv("DEEPSEEK_MODEL", "deepseek-chat").strip(),
             target_url=target_url,
             max_crawl_depth=max_depth,
+            max_crawl_pages=max_pages,
             scan_timeout=timeout,
             log_level=os.getenv("LOG_LEVEL", "INFO").upper().strip(),
+            seed_forms_path=seed_forms_path,
+            reports_dir=reports_dir,
         )

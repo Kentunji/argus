@@ -1,0 +1,28 @@
+# Argus seed forms
+#
+# Use this file to declare forms or API endpoints the static crawler
+# cannot discover (e.g. SPA-rendered forms, REST endpoints not linked
+# from HTML, or anything behind client-side routing).
+#
+# Argus merges these with whatever the crawler finds, then runs every
+# enabled detector against the union.
+#
+# Copy this file to `seed_forms.yml` (which is gitignored) and edit
+# for your target.
+
+forms:
+  # Example: Juice Shop login (SPA — invisible to static crawler)
+  - action: http://localhost:3000/rest/user/login
+    method: POST
+    inputs:
+      - name: email
+        type: email
+      - name: password
+        type: password
+
+  # Example: Juice Shop product search REST endpoint
+  - action: http://localhost:3000/rest/products/search
+    method: GET
+    inputs:
+      - name: q
+        type: text
