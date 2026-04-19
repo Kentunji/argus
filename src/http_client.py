@@ -8,6 +8,7 @@ cookie jar so authenticated scans Just Work later.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 import requests
 
@@ -17,8 +18,6 @@ DEFAULT_TIMEOUT = 15  # seconds
 
 @dataclass
 class HttpResponse:
-    """Minimal response wrapper; normalized so tests don't depend on requests."""
-
     url: str
     status_code: int
     headers: dict[str, str]
@@ -27,7 +26,6 @@ class HttpResponse:
 
 
 def build_session() -> requests.Session:
-    """Return a pre-configured requests.Session for scanning."""
     session = requests.Session()
     session.headers.update(
         {
@@ -45,20 +43,21 @@ def fetch(
     *,
     method: str = "GET",
     data: dict[str, str] | None = None,
+    json: dict[str, Any] | None = None,
     timeout: int = DEFAULT_TIMEOUT,
 ) -> HttpResponse:
     """Issue a request and return a normalized HttpResponse.
 
-    Raises:
-        requests.RequestException: for network-level failures.
+    Pass `data` for form-encoded bodies, or `json` for JSON bodies.
+    Mutually exclusive — if both given, `json` wins.
     """
-    resp = session.request(
-        method=method.upper(),
-        url=url,
-        data=data,
-        timeout=timeout,
-        allow_redirects=True,
-    )
+    kwargs: dict[str, Any] = {"timeout": timeout, "allow_redirects": True}
+    if json is not None:
+        kwargs["json"] = json
+    elif data is not None:
+        kwargs["data"] = data
+
+    resp = session.request(method=method.upper(), url=url, **kwargs)
     return HttpResponse(
         url=resp.url,
         status_code=resp.status_code,
