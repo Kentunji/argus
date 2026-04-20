@@ -18,6 +18,7 @@ class ScanResult:
     forms_tested: int = 0
     detectors_run: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    executive_summary: str = ""
 
     @property
     def duration_seconds(self) -> float:

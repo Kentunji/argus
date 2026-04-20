@@ -1,9 +1,4 @@
-"""Finding — the universal output type for all detectors.
-
-Every detector returns a list of these. The reporter consumes them. Keeping
-this dataclass small and consistent is what lets v0.2/v0.3 add new detectors
-without changing the report layer.
-"""
+"""Finding — the universal output type for all detectors."""
 
 from __future__ import annotations
 
@@ -30,25 +25,41 @@ class Confidence(str, Enum):
 class Evidence:
     """The proof Argus collected for a finding."""
 
-    method: str            # GET, POST, etc.
-    url: str               # The URL probed
-    parameter: str         # The vulnerable parameter / form field
-    payload: str           # What we sent
-    indicator: str         # Why we think this is a vulnerability
-    response_snippet: str  # ~200 chars of the response showing the issue
+    method: str
+    url: str
+    parameter: str
+    payload: str
+    indicator: str
+    response_snippet: str
+
+
+@dataclass(frozen=True)
+class Triage:
+    """LLM-generated analysis attached to a finding.
+
+    The detector provides raw evidence; triage adds human-readable context
+    and a tailored remediation that goes beyond generic advice.
+    """
+
+    confidence: Confidence          # LLM's independent confidence rating
+    explanation: str                # plain-English why this matters
+    tailored_remediation: str       # specific fix (often with code snippet)
+    is_false_positive: bool = False # LLM's false-positive flag
+    model: str = ""                 # which model produced this
 
 
 @dataclass(frozen=True)
 class Finding:
     """A single security finding produced by a detector."""
 
-    id: str                # e.g. "ARG-001"
-    detector: str          # which detector produced this (e.g. "xss")
-    type: str              # human-readable type, e.g. "Reflected XSS"
+    id: str
+    detector: str
+    type: str
     severity: Severity
     confidence: Confidence
-    cwe: str               # e.g. "CWE-79"
-    owasp: str             # e.g. "A03:2021 Injection"
+    cwe: str
+    owasp: str
     evidence: Evidence
-    remediation: str       # short remediation suggestion
+    remediation: str
+    triage: Triage | None = None
     discovered_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))

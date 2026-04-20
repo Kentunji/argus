@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
 from pathlib import Path
 
 from src.reporters.base import Reporter
@@ -38,6 +37,7 @@ class JsonReporter(Reporter):
                 "detectors_run": result.detectors_run,
                 "errors": result.errors,
                 "totals_by_severity": result.finding_count_by_severity,
+                "executive_summary": result.executive_summary,
             },
             "findings": [
                 {
@@ -58,6 +58,13 @@ class JsonReporter(Reporter):
                         "response_snippet": f.evidence.response_snippet,
                     },
                     "remediation": f.remediation,
+                    "triage": {
+                        "confidence": f.triage.confidence.value,
+                        "explanation": f.triage.explanation,
+                        "tailored_remediation": f.triage.tailored_remediation,
+                        "is_false_positive": f.triage.is_false_positive,
+                        "model": f.triage.model,
+                    } if f.triage else None,
                 }
                 for f in result.findings
             ],
