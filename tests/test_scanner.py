@@ -54,7 +54,7 @@ forms:
 
     config = _config(tmp_path, seed_path)
     scanner = Scanner(config)
-    result, json_path = scanner.scan_and_report("http://localhost:3000")
+    result, json_path, html_path = scanner.scan_and_report("http://localhost:3000")
 
     # Headers detector always finds something on Juice Shop
     assert len(result.findings) >= 1
@@ -66,6 +66,8 @@ forms:
     assert "headers" in result.detectors_run
     # JSON report on disk
     assert Path(json_path).exists()
+    assert Path(json_path).exists()
+    assert Path(html_path).exists()
     # SQLi detector finds the login bypass via seeded form
     sqli_findings = [f for f in result.findings if "SQL" in f.type]
     assert len(sqli_findings) >= 1, "Expected SQLi finding via seed forms"
