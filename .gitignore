@@ -43,3 +43,13 @@ seed_forms.yml
 
 # Scan output
 reports/
+
+# Editable install metadata
+*.egg-info/
+build/
+dist/
+
+# Editable install metadata
+*.egg-info/
+build/
+dist/
