@@ -1,4 +1,4 @@
-"""Terminal reporter — rich-styled summary table."""
+"""Terminal reporter — rich-styled summary + findings table + triage hints."""
 
 from __future__ import annotations
 
@@ -34,6 +34,13 @@ class TerminalReporter(Reporter):
         )
         c.print(Panel(header, title="Argus Scan Summary", border_style="cyan"))
 
+        if result.executive_summary:
+            c.print(Panel(
+                result.executive_summary,
+                title="Executive Summary (AI-generated)",
+                border_style="magenta",
+            ))
+
         if not result.findings:
             c.print("\n[green]No findings.[/green]\n")
             return
@@ -44,8 +51,8 @@ class TerminalReporter(Reporter):
         table.add_column("Type")
         table.add_column("Location", overflow="fold")
         table.add_column("Param", no_wrap=True)
+        table.add_column("LLM", no_wrap=True)
 
-        # Highest severity first
         severity_order = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
         sorted_findings = sorted(
             result.findings,
@@ -54,16 +61,22 @@ class TerminalReporter(Reporter):
 
         for f in sorted_findings:
             sev_style = _SEVERITY_STYLES.get(f.severity.value, "white")
+            llm_flag = "—"
+            if f.triage:
+                if f.triage.is_false_positive:
+                    llm_flag = "[dim]FP?[/dim]"
+                else:
+                    llm_flag = f.triage.confidence.value[:4]
             table.add_row(
                 f.id,
                 f"[{sev_style}]{f.severity.value}[/{sev_style}]",
                 f.type,
                 f.evidence.url,
                 f.evidence.parameter,
+                llm_flag,
             )
         c.print(table)
 
-        # Severity rollup
         counts = result.finding_count_by_severity
         rollup = "  ".join(
             f"[{_SEVERITY_STYLES.get(s, 'white')}]{s}: {counts.get(s, 0)}[/{_SEVERITY_STYLES.get(s, 'white')}]"

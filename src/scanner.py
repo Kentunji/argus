@@ -1,8 +1,4 @@
-"""Argus scan orchestrator.
-
-Glues crawl + seed forms + detectors + reporters together. One public
-entry point: `Scanner(config).scan(target_url)` returns a ScanResult.
-"""
+"""Argus scan orchestrator."""
 
 from __future__ import annotations
 
@@ -12,6 +8,8 @@ from src.detectors.headers import HeadersDetector
 from src.detectors.sqli import SQLiDetector
 from src.detectors.xss import XSSDetector
 from src.http_client import build_session
+from src.llm.deepseek_client import DeepSeekClient
+from src.llm.triage import Triager
 from src.logger import get_logger
 from src.reporters.json_writer import JsonReporter
 from src.reporters.terminal import TerminalReporter
@@ -22,15 +20,22 @@ log = get_logger(__name__)
 
 
 class Scanner:
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config, *, enable_triage: bool = True) -> None:
         self._config = config
         self._detectors = [XSSDetector(), SQLiDetector(), HeadersDetector()]
+        self._enable_triage = enable_triage
+        self._triager: Triager | None = None
+        if enable_triage:
+            try:
+                self._triager = Triager(DeepSeekClient(config))
+            except Exception as exc:  # noqa: BLE001
+                log.warning("LLM triage disabled — client init failed: %s", exc)
 
     def scan(self, target: str) -> ScanResult:
         result = ScanResult(target=target, started_at=now_utc())
         session = build_session()
 
-        # ── Crawl ───────────────────────────────────────────────
+        # Crawl
         log.info("Crawling %s (depth=%d, max=%d)",
                  target, self._config.max_crawl_depth, self._config.max_crawl_pages)
         try:
@@ -47,7 +52,7 @@ class Scanner:
 
         result.urls_visited = len(crawl_result.urls_visited)
 
-        # ── Merge seed forms ────────────────────────────────────
+        # Merge seed forms
         try:
             seeded = load_seed_forms(self._config.seed_forms_path)
             crawl_result.forms.extend(seeded)
@@ -59,7 +64,7 @@ class Scanner:
         log.info("Discovered %d URL(s) and %d form(s)",
                  result.urls_visited, result.forms_tested)
 
-        # ── Run each detector ───────────────────────────────────
+        # Run detectors
         for detector in self._detectors:
             log.info("Running %s detector", detector.name)
             try:
@@ -71,11 +76,16 @@ class Scanner:
                 log.exception("Detector %s failed", detector.name)
                 result.errors.append(f"detector:{detector.name}: {exc}")
 
+        # LLM triage (optional, fails gracefully)
+        if self._triager and result.findings:
+            log.info("Running LLM triage on %d finding(s)", len(result.findings))
+            result.findings = self._triager.triage_all(result.findings)
+            result.executive_summary = self._triager.executive_summary(result.findings, target)
+
         result.completed_at = now_utc()
         return result
 
     def scan_and_report(self, target: str) -> tuple[ScanResult, str]:
-        """Scan, then render terminal + JSON. Returns (result, json_path)."""
         result = self.scan(target)
         TerminalReporter().render(result)
         json_path = JsonReporter(self._config.reports_dir).render(result)
