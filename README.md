@@ -28,17 +28,16 @@ Argus crawls a web application, probes it for common vulnerabilities (XSS, SQL i
 
 ## Demo
 
-Scan OWASP Juice Shop, find five real vulnerabilities in under 50 seconds, including the famous Login Admin SQL injection challenge:
+Against OWASP Juice Shop, Argus finds five real vulnerabilities in under 50 seconds, including the famous "Login Admin" SQL injection (authentication bypass via `' OR 1=1--` on `POST /rest/user/login`).
 
-![Argus terminal output showing scan results](docs/images/hero-terminal.png)
+A typical scan produces:
 
-![Argus HTML report with AI executive summary](docs/images/hero-html-top.png)
+- **Terminal output:** target, duration, AI-generated executive summary panel, and a severity-sorted findings table with per-finding LLM confidence ratings.
+- **HTML report:** dark-mode layout with per-finding evidence, AI explanation, and stack-specific remediation code (for example Node.js + PostgreSQL parameterised queries). The HTML file is self-contained and safe to email, host, or attach to a report.
+- **JSON report:** machine-readable, structured output for CI integrations.
 
-![Expanded SQLi finding with AI-generated remediation code](docs/images/hero-sqli-expanded.png)
+Representative scan statistics: 5 findings (2 HIGH SQLi, 1 MEDIUM header, 1 LOW header, 1 INFO header), 0 false positives, 48.53 seconds with full AI triage. See the `reports/` directory after running a scan for sample output.
 
-*Screenshots from a real scan on April 20, 2026. Five findings (two HIGH SQLi, one MEDIUM, one LOW, one INFO), zero false positives, 48.53 seconds total scan time with AI triage enabled.*
-
----
 
 ## Requirements
 
