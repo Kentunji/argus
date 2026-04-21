@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/images/argus-logo.png" alt="Argus logo" width="480">
+</p>
+
 # Argus
 
 **AI-powered web application vulnerability scanner.**
