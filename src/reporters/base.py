@@ -14,3 +14,4 @@ class Reporter(ABC):
     def render(self, result: ScanResult) -> str | None:
         """Produce the report. Return a path/string for file outputs, None for stdout."""
         raise NotImplementedError
+

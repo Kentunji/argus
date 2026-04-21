@@ -94,3 +94,4 @@ class Scanner:
         log.info("JSON report written to %s", json_path)
         log.info("HTML report written to %s", html_path)
         return result, json_path, html_path
+

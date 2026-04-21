@@ -72,3 +72,4 @@ class JsonReporter(Reporter):
 
         path.write_text(json.dumps(payload, indent=2, default=_serialize))
         return str(path)
+
